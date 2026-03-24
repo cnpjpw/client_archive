@@ -141,12 +141,12 @@ def pegar_empresas_json(conn, dia):
 
 def carregar_auxiliares_banco(conn, tmp_dir):
     auxiliares_para_tabelas = {
-        "Paises.csv": "paises",
-        "Municipios.csv": "municipios",
-        "Naturezas.csv": "naturezas_juridicas",
-        "Qualificacoes.csv": "qualificacoes_socios",
-        "Cnaes.csv": "cnaes",
-        "Motivos.csv": "motivos_situacoes",
+        "paises.csv": "paises",
+        "municipios.csv": "municipios",
+        "naturezas_juridicas.csv": "naturezas_juridicas",
+        "qualificacoes_socios.csv": "qualificacoes_socios",
+        "cnaes.csv": "cnaes",
+        "motivos_situacoes.csv": "motivos_situacoes",
 
         "identificador_matriz_filial.csv": "identificador_matriz_filial",
         "situacoes_cadastrais.csv": "situacoes_cadastrais",
