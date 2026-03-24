@@ -140,30 +140,29 @@ def pegar_empresas_json(conn, dia):
     return str(results_json)
 
 def carregar_auxiliares_banco(conn, tmp_dir):
-    auxiliares_para_tabelas = {
-        "paises.csv": "paises",
-        "municipios.csv": "municipios",
-        "naturezas_juridicas.csv": "naturezas_juridicas",
-        "qualificacoes_socios.csv": "qualificacoes_socios",
-        "cnaes.csv": "cnaes",
-        "motivos_situacoes.csv": "motivos_situacoes",
-
-        "identificador_matriz_filial.csv": "identificador_matriz_filial",
-        "situacoes_cadastrais.csv": "situacoes_cadastrais",
-        "portes_empresas.csv": "portes_empresas",
-        "faixas_etarias.csv": "faixas_etarias",
-        "qualificacoes_representantes.csv": "qualificacoes_representantes",
-        "identificadores_socios.csv": "identificadores_socios",
-    }
-    for arq, tabela_nome in auxiliares_para_tabelas.items():
-        url = 'https://archive.cnpj.pw/tabelas_auxiliares/' + arq
+    tabelas_auxiliares = [
+        "paises",
+        "municipios",
+        "naturezas_juridicas",
+        "qualificacoes_socios",
+        "cnaes",
+        "motivos_situacoes",
+        "identificador_matriz_filial",
+        "situacoes_cadastrais",
+        "portes_empresas",
+        "faixas_etarias",
+        "qualificacoes_representantes",
+        "identificadores_socios",
+    ]
+    for tabela_nome in tabelas_auxiliares:
+        url = f'https://archive.cnpj.pw/tabelas_auxiliares/{tabela_nome}.csv'
         with requests.get(url, stream=True) as r:
             r.raise_for_status()
-            with open(tmp_dir / 'tmp.csv', "wb") as f:
+            with open(tmp_dir / f'{tabela_nome}.csv', "wb") as f:
                 for chunk in r.iter_content(8192):
                     f.write(chunk)
-        carregar_csv_banco(tabela_nome, tmp_dir / 'tmp.csv', conn)
-        (tmp_dir / 'tmp.csv').unlink()
+        carregar_csv_banco(tabela_nome, tmp_dir / f'{tabela_nome}.csv', conn)
+        (tmp_dir / f'{tabela_nome}.csv').unlink()
 
 
 def carregar_principais_banco(conn, dias, tmp_dir):
