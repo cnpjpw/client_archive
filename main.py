@@ -6,6 +6,7 @@ import zipfile
 import json
 from config import TABELAS_PRINCIPAIS, TABELAS_AUXILIARES
 import shutil
+from datetime import datetime, timezone, timedelta
 
 
 def baixar_e_descompactar_stream(url, tmp_dir):
@@ -25,6 +26,16 @@ def baixar_e_descompactar_stream(url, tmp_dir):
 def executar_sql_arquivo(conn, sql_path):
     with open(sql_path, "r", encoding="utf-8") as f:
         conn.executescript(f.read())
+
+def carregar_archive_corrente_banco(url, tmp_dir, conn):
+    for tabela in TABELAS_PRINCIPAIS:
+        with requests.get(url + f'{tabela}.csv', stream=True) as r:
+            if r.status_code == 404:
+                continue
+            with open(tmp_dir / f"{tabela}.csv", "wb") as f:
+                for chunk in r.iter_content(8192):
+                    f.write(chunk)
+        carregar_csv_banco(tabela, tmp_dir / f'{tabela}.csv', conn)
 
 
 def carregar_csv_banco(nome_tabela, csv_path, conn, chunk_size=10000):
@@ -143,6 +154,7 @@ def pegar_empresas_json(conn, dia):
 
     return str(results_json)
 
+
 def carregar_auxiliares_banco(conn, tmp_dir):
     for tabela_nome in TABELAS_AUXILIARES:
         url = f'https://archive.cnpj.pw/tabelas_auxiliares/{tabela_nome}.csv'
@@ -155,12 +167,19 @@ def carregar_auxiliares_banco(conn, tmp_dir):
         (tmp_dir / f'{tabela_nome}.csv').unlink()
 
 
-def carregar_archives_banco(conn, dia, tmp_dir):
-    url = 'https://archive.cnpj.pw/dias_passados/' + dia + '.zip'
-    arquivos_nomes = baixar_e_descompactar_stream(url, tmp_dir)
-    tabelas_destino = [nome.split('.')[0] for nome in arquivos_nomes]
-    for nome_tabela in tabelas_destino:
-        carregar_csv_banco(nome_tabela, (tmp_dir / f'{nome_tabela}.csv'), conn)
+def carregar_archives_banco(conn, dia_inicial, tmp_dir):
+    dia_atual = datetime.now(tz=timezone(timedelta(hours=-3)))
+    for i in range((dia_atual- dia_inicial).days):
+        dia_str = (dia_inicial + timedelta(days=i)).strftime("%d-%m-%Y")
+        url = 'https://archive.cnpj.pw/dias_passados/' + dia_str + '.zip'
+        arquivos_nomes = baixar_e_descompactar_stream(url, tmp_dir)
+        tabelas_destino = [nome.split('.')[0] for nome in arquivos_nomes]
+        for nome_tabela in tabelas_destino:
+            carregar_csv_banco(nome_tabela, (tmp_dir / f'{nome_tabela}.csv'), conn)
+
+    dia_atual_str = dia_atual.strftime("%d-%m-%Y")
+    url = 'https://archive.cnpj.pw/dias_passados/' + dia_atual_str + '/'
+    carregar_archive_corrente_banco(url, tmp_dir, conn)
 
 
 PATH_SCRIPT = Path(__file__).parent
@@ -172,12 +191,7 @@ executar_sql_arquivo(conn, PATH_SCRIPT / 'criar_tabelas.sql')
 (PATH_SCRIPT / 'tmp').mkdir(exist_ok=True)
 tmp_dir = PATH_SCRIPT / 'tmp'
 carregar_auxiliares_banco(conn, tmp_dir)
-dias = ['19-03-2026']
-for dia in dias:
-    carregar_archives_banco(conn, dia, tmp_dir)
+dia_inicial = datetime(2026, 3, 14, tzinfo=timezone(timedelta(hours=-3)))
+carregar_archives_banco(conn, dia_inicial, tmp_dir)
 executar_sql_arquivo(conn, PATH_SCRIPT / 'criar_indices.sql')
-for dia in dias:
-    dia_iso = '-'.join(reversed(dia.split('-')))
-    with open(PATH_SCRIPT / f'{dia}.json', 'w') as f:
-        f.write(pegar_empresas_json(conn, dia_iso))
-conn.close()
+
