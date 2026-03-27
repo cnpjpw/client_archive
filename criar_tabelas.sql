@@ -1,4 +1,4 @@
-CREATE TABLE empresas (
+CREATE TABLE IF NOT EXISTS empresas (
     cnpj_base TEXT PRIMARY KEY,
     nome_empresarial TEXT,
     natureza_juridica INTEGER,
@@ -10,7 +10,7 @@ CREATE TABLE empresas (
     FOREIGN KEY (porte_empresa) REFERENCES portes_empresas (codigo)
 );
 
-CREATE TABLE estabelecimentos (
+CREATE TABLE IF NOT EXISTS estabelecimentos (
     cnpj_base TEXT,
     cnpj_ordem TEXT,
     cnpj_dv TEXT,
@@ -49,7 +49,7 @@ CREATE TABLE estabelecimentos (
     FOREIGN KEY (municipio) REFERENCES municipios (codigo)
 );
 
-CREATE TABLE dados_simples (
+CREATE TABLE IF NOT EXISTS dados_simples (
     cnpj_base TEXT PRIMARY KEY,
     opcao_simples INTEGER, -- BOOLEAN -> INTEGER (0/1)
     data_opcao_simples TEXT,
@@ -60,7 +60,7 @@ CREATE TABLE dados_simples (
     FOREIGN KEY (cnpj_base) REFERENCES empresas (cnpj_base)
 );
 
-CREATE TABLE socios (
+CREATE TABLE IF NOT EXISTS socios (
     cnpj_base TEXT,
     identificador INTEGER,
     nome TEXT,
@@ -80,63 +80,63 @@ CREATE TABLE socios (
     FOREIGN KEY (faixa_etaria) REFERENCES faixas_etarias (codigo)
 );
 
-CREATE TABLE paises (
+CREATE TABLE IF NOT EXISTS paises (
     codigo INTEGER PRIMARY KEY,
     descricao TEXT
 );
 
-CREATE TABLE municipios (
+CREATE TABLE IF NOT EXISTS municipios (
     codigo INTEGER PRIMARY KEY,
     descricao TEXT
 );
 
-CREATE TABLE qualificacoes_socios (
+CREATE TABLE IF NOT EXISTS qualificacoes_socios (
     codigo INTEGER PRIMARY KEY,
     descricao TEXT
 );
 
-CREATE TABLE naturezas_juridicas (
+CREATE TABLE IF NOT EXISTS naturezas_juridicas (
     codigo INTEGER PRIMARY KEY,
     descricao TEXT
 );
 
-CREATE TABLE cnaes (
+CREATE TABLE IF NOT EXISTS cnaes (
     codigo INTEGER PRIMARY KEY,
     descricao TEXT
 );
 
-CREATE TABLE motivos_situacoes (
+CREATE TABLE IF NOT EXISTS motivos_situacoes (
     codigo INTEGER PRIMARY KEY,
     descricao TEXT
 );
 
-CREATE TABLE faixas_etarias (
+CREATE TABLE IF NOT EXISTS faixas_etarias (
     codigo INTEGER PRIMARY KEY,
     descricao TEXT
 );
 
-CREATE table identificador_matriz_filial (
+CREATE TABLE iF NOT EXISTS identificador_matriz_filial (
 	codigo SMALLINT PRIMARY KEY,
 	descricao TEXT
 );
 
 
-CREATE TABLE situacoes_cadastrais (
+CREATE TABLE IF NOT EXISTS situacoes_cadastrais (
     codigo INTEGER PRIMARY KEY,
     descricao TEXT
 );
 
-CREATE TABLE portes_empresas (
+CREATE TABLE IF NOT EXISTS portes_empresas (
     codigo INTEGER PRIMARY KEY,
     descricao TEXT
 );
 
-CREATE TABLE identificadores_socios (
+CREATE TABLE IF NOT EXISTS identificadores_socios (
     codigo INTEGER PRIMARY KEY,
     descricao TEXT
 );
 
-CREATE TABLE qualificacoes_representantes (
+CREATE TABLE IF NOT EXISTS qualificacoes_representantes (
     codigo INTEGER PRIMARY KEY,
     descricao TEXT
 );

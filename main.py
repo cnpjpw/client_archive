@@ -183,8 +183,7 @@ def carregar_archives_banco(conn, dia_inicial, tmp_dir):
 
 
 PATH_SCRIPT = Path(__file__).parent
-Path(PATH_SCRIPT / 'cnpjpw.db').unlink(missing_ok=True)
-Path(PATH_SCRIPT / 'cnpjpw.db').touch()
+Path(PATH_SCRIPT / 'cnpjpw.db').touch(exist_ok=True)
 conn = sqlite3.connect(PATH_SCRIPT / 'cnpjpw.db')
 executar_sql_arquivo(conn, PATH_SCRIPT / 'criar_tabelas.sql')
 
