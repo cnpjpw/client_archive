@@ -1,7 +1,8 @@
 import csv
 import sqlite3
 from pathlib import Path
-import requests
+import urllib.request
+import urllib.error
 import zipfile
 import json
 from config import TABELAS_PRINCIPAIS, TABELAS_AUXILIARES
@@ -10,15 +11,23 @@ from datetime import datetime, timezone, timedelta
 
 
 def baixar_e_descompactar_stream(url, tmp_dir):
-    with requests.get(url, stream=True) as r:
-        r.raise_for_status()
-        with open(tmp_dir / "tmp.zip", "wb") as f:
-            for chunk in r.iter_content(8192):
-                f.write(chunk)
+    try:
+        with urllib.request.urlopen(url) as r:
+            with open(tmp_dir / "tmp.zip", "wb") as f:
+                while True:
+                    chunk = r.read(8192)
+                    if not chunk:
+                        break
+                    f.write(chunk)
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            return []
+        raise
 
     with zipfile.ZipFile(tmp_dir / "tmp.zip") as z:
         nomes_arquivos = z.namelist()
         z.extractall(tmp_dir)
+
     (tmp_dir / 'tmp.zip').unlink()
     return nomes_arquivos
 
@@ -27,14 +36,23 @@ def executar_sql_arquivo(conn, sql_path):
     with open(sql_path, "r", encoding="utf-8") as f:
         conn.executescript(f.read())
 
+
 def carregar_archive_corrente_banco(url, tmp_dir, conn):
     for tabela in TABELAS_PRINCIPAIS:
-        with requests.get(url + f'{tabela}.csv', stream=True) as r:
-            if r.status_code == 404:
+        file_url = url + f'{tabela}.csv'
+        try:
+            with urllib.request.urlopen(file_url) as r:
+                with open(tmp_dir / f"{tabela}.csv", "wb") as f:
+                    while True:
+                        chunk = r.read(8192)
+                        if not chunk:
+                            break
+                        f.write(chunk)
+        except urllib.error.HTTPError as e:
+            if e.code == 404:
                 continue
-            with open(tmp_dir / f"{tabela}.csv", "wb") as f:
-                for chunk in r.iter_content(8192):
-                    f.write(chunk)
+            raise
+
         carregar_csv_banco(tabela, tmp_dir / f'{tabela}.csv', conn)
 
 
@@ -61,11 +79,14 @@ def carregar_csv_banco(nome_tabela, csv_path, conn, chunk_size=10000):
 def carregar_auxiliares_banco(conn, tmp_dir):
     for tabela_nome in TABELAS_AUXILIARES:
         url = f'https://archive.cnpj.pw/tabelas_auxiliares/{tabela_nome}.csv'
-        with requests.get(url, stream=True) as r:
-            r.raise_for_status()
+        with urllib.request.urlopen(url) as r:
             with open(tmp_dir / f'{tabela_nome}.csv', "wb") as f:
-                for chunk in r.iter_content(8192):
+                while True:
+                    chunk = r.read(8192)
+                    if not chunk:
+                        break
                     f.write(chunk)
+
         carregar_csv_banco(tabela_nome, tmp_dir / f'{tabela_nome}.csv', conn)
         (tmp_dir / f'{tabela_nome}.csv').unlink()
 

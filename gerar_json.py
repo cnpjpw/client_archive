@@ -12,8 +12,6 @@ def gerar_json(dia_iso):
     db_path.touch(exist_ok=True)
     conn = sqlite3.connect(db_path)
 
-
-
     query = """
     SELECT json_object(
         -- empresas
