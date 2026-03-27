@@ -119,8 +119,8 @@ if __name__ == '__main__':
     if len(sys.argv) != 2 or sys.argv[1] == '--help':
         print(
     """
-    Uso: python gerar_json.py DD-MM-YYYY
-    gera json análogo ao formato do endpoint /cnpj/{cnpj} de todos os cnpjs da data passada e salva no arquivo DD-MM-YYYY.json
+Uso: python gerar_json.py DD-MM-YYYY
+gera json análogo ao formato do endpoint /cnpj/{cnpj} de todos os cnpjs da data passada presentes no banco local e salva no arquivo DD-MM-YYYY.json
     """
         )
         sys.exit(1)
