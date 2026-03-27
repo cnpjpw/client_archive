@@ -6,4 +6,5 @@ Uso: python gerar\_json.py DD-MM-YYYY
 
 gera json análogo ao formato do endpoint /cnpj/{cnpj} de todos os cnpjs da data passada presentes no banco local e salva no arquivo DD-MM-YYYY.json
 
+https://github.com/user-attachments/assets/9400135c-f0ec-450e-84ab-23b14f173929
 
