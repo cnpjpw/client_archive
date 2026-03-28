@@ -37,29 +37,10 @@ def executar_sql_arquivo(conn, sql_path):
         conn.executescript(f.read())
 
 
-def carregar_archive_corrente_banco(url, tmp_dir, conn):
-    for tabela in TABELAS_PRINCIPAIS:
-        file_url = url + f'{tabela}.csv'
-        try:
-            with urllib.request.urlopen(file_url) as r:
-                with open(tmp_dir / f"{tabela}.csv", "wb") as f:
-                    while True:
-                        chunk = r.read(8192)
-                        if not chunk:
-                            break
-                        f.write(chunk)
-        except urllib.error.HTTPError as e:
-            if e.code == 404:
-                continue
-            raise
-
-        carregar_csv_banco(tabela, tmp_dir / f'{tabela}.csv', conn)
-
-
 def carregar_csv_banco(nome_tabela, csv_path, conn, chunk_size=10000):
     with open(csv_path, "r", encoding="utf-8") as f:
         reader = csv.reader(f, delimiter=';')
-        cols = list(reader)  # remova se NÃO tiver header
+        cols = list(reader)
         if not cols:
             return
         placeholders = ",".join(["?"] * len(cols[0]))
@@ -93,18 +74,44 @@ def carregar_auxiliares_banco(conn, tmp_dir):
 
 def carregar_archives_banco(conn, dia_inicial, tmp_dir):
     dia_atual = datetime.now(tz=timezone(timedelta(hours=-3)))
-    for i in range((dia_atual- dia_inicial).days):
+    acumuladores = {}
+    def append_arquivo(nome_tabela, origem_path):
+        destino_path = tmp_dir / f"{nome_tabela}_acc.csv"
+        modo = "a" if destino_path.exists() else "w"
+        with open(origem_path, "r", encoding="utf-8") as src, \
+             open(destino_path, modo, encoding="utf-8") as dst:
+            shutil.copyfileobj(src, dst)
+        acumuladores[nome_tabela] = destino_path
+    for i in range((dia_atual - dia_inicial).days):
         dia_str = (dia_inicial + timedelta(days=i)).strftime("%d-%m-%Y")
         url = 'https://archive.cnpj.pw/dias_passados/' + dia_str + '.zip'
         arquivos_nomes = baixar_e_descompactar_stream(url, tmp_dir)
-        tabelas_destino = [nome.split('.')[0] for nome in arquivos_nomes]
-        for nome_tabela in tabelas_destino:
-            carregar_csv_banco(nome_tabela, (tmp_dir / f'{nome_tabela}.csv'), conn)
-
+        for nome_arquivo in arquivos_nomes:
+            nome_tabela = nome_arquivo.split('.')[0]
+            origem = tmp_dir / nome_arquivo
+            append_arquivo(nome_tabela, origem)
+            origem.unlink()
     dia_atual_str = dia_atual.strftime("%d-%m-%Y")
     url = 'https://archive.cnpj.pw/dias_passados/' + dia_atual_str + '/'
-    carregar_archive_corrente_banco(url, tmp_dir, conn)
-
+    for tabela in TABELAS_PRINCIPAIS:
+        file_url = url + f'{tabela}.csv'
+        try:
+            with urllib.request.urlopen(file_url) as r:
+                tmp_file = tmp_dir / f"{tabela}.csv"
+                with open(tmp_file, "wb") as f:
+                    while True:
+                        chunk = r.read(8192)
+                        if not chunk:
+                            break
+                        f.write(chunk)
+                append_arquivo(tabela, tmp_file)
+                tmp_file.unlink()
+        except urllib.error.HTTPError as e:
+            if e.code != 404:
+                raise
+    for nome_tabela, path in acumuladores.items():
+        carregar_csv_banco(nome_tabela, path, conn)
+        path.unlink()
 
 def executar_carga(data_inicial):
     PATH_SCRIPT = Path(__file__).parent
@@ -134,7 +141,6 @@ baixa todos os dumps do archive do cnpjpw a partir da data informada e carrega n
 """
         )
         sys.exit(1)
-
     data = datetime.strptime(sys.argv[1], '%d-%m-%Y')
     data_inicial = datetime(
         data.year, data.month, data.day,
